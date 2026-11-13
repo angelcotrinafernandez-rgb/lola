@@ -5,7 +5,9 @@ const CLOUD_URL = 'https://text.pollinations.ai/openai';
 const CLOUD_MODEL = 'openai-fast';
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const CLOUD_MIN_MS = 30000;
-const systemPrompt = `Eres Lola, una asistente personal y comercial para Ángel. Hablas español de España, con cercanía y claridad. Ayudas a organizar, redactar y preparar tareas comerciales. Da respuestas prácticas. No inventes datos ni afirmes haber hecho acciones fuera de esta conversación.`;
+const MEMORY_MAX = 2000;
+const basePrompt = `Eres Lola, una asistente personal y comercial para Ángel. Hablas español de España, con cercanía y claridad. Ayudas a organizar, redactar y preparar tareas comerciales. Da respuestas prácticas. No inventes datos ni afirmes haber hecho acciones fuera de esta conversación.
+Cuando aprendas un dato duradero sobre Ángel o su trabajo (nombres, empresas, clientes, preferencias, acuerdos), añade al final de tu respuesta, en una línea aparte, una marca así: [[recuerda: el dato en una frase corta]]. No la uses para cosas pasajeras. Si Ángel te pide olvidar algo, no lo vuelvas a guardar.`;
 const PROVIDERS = {
   cloud: { ready: 'Nube gratis lista' },
   gemini: { ready: 'Nube Gemini lista' },
@@ -16,33 +18,94 @@ let isLoading = false;
 let cloudReady = false;
 let lastCloudRequest = 0;
 let recognition;
-let state = JSON.parse(localStorage.getItem(STORE) || '{"messages":[],"voice":true,"voiceName":""}');
+let state = JSON.parse(localStorage.getItem(STORE) || '{"messages":[],"voice":true,"voiceName":"","voiceRate":1,"memory":""}');
 if(!PROVIDERS[state.provider]) state.provider = 'cloud';
 if(typeof state.geminiKey !== 'string') state.geminiKey = '';
+if(typeof state.memory !== 'string') state.memory = '';
+if(typeof state.voiceRate !== 'number' || !(state.voiceRate >= 0.7 && state.voiceRate <= 1.3)) state.voiceRate = 1;
 const messages = $('#messages'), status = $('#status'), input = $('#messageInput'), send = $('.send');
 
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+function systemPrompt(){
+  const memory = state.memory.trim();
+  return basePrompt + (memory ? `\n\nLo que recuerdas de Ángel (memoria guardada):\n${memory}` : '');
+}
+function setStatus(text){ status.textContent = text; }
+function resize(){ input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight,120)+'px'; }
+
 function addMessage(role, text, persist = true){
-  const el = document.createElement('article'); el.className = `message ${role}`; el.textContent = text; messages.append(el); messages.scrollTop = messages.scrollHeight;
+  const wrap = document.createElement('div'); wrap.className = `msg-wrap ${role}`;
+  const el = document.createElement('article'); el.className = `message ${role}`; el.textContent = text;
+  wrap.append(el);
+  if(role === 'assistant' && text){
+    const copy = document.createElement('button'); copy.className = 'msg-copy'; copy.type = 'button'; copy.title = 'Copiar texto'; copy.textContent = '📋';
+    copy.addEventListener('click', async () => {
+      try{ await navigator.clipboard.writeText(el.textContent); copy.textContent = '✓'; setTimeout(()=>copy.textContent='📋', 1500); }
+      catch(e){ addMessage('system','No se pudo copiar. Mantén pulsado el texto y elige Copiar.',false); }
+    });
+    wrap.append(copy);
+  }
+  messages.append(wrap); messages.scrollTop = messages.scrollHeight;
   if(persist && role !== 'system'){ state.messages.push({role, content:text}); state.messages = state.messages.slice(-24); save(); }
   return el;
 }
-function setStatus(text){ status.textContent = text; }
 function renderStored(){ state.messages.forEach(({role,content}) => addMessage(role,content,false)); }
-function resize(){ input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight,120)+'px'; }
 
+function rememberFact(fact){
+  fact = fact.trim().replace(/\s+/g,' ');
+  if(!fact) return false;
+  if(state.memory.toLowerCase().includes(fact.toLowerCase())) return false;
+  state.memory = (state.memory ? state.memory.trim() + '\n' : '') + fact;
+  if(state.memory.length > MEMORY_MAX) state.memory = state.memory.slice(-MEMORY_MAX);
+  save();
+  $('#memoryText').value = state.memory;
+  return true;
+}
+function extractMemory(answer){
+  const marks = [...answer.matchAll(/\[\[recuerda:\s*([^\]]+)\]\]/gi)];
+  const clean = answer.replace(/\n?\s*\[\[recuerda:[^\]]*\]\]/gi,'').trim();
+  const saved = marks.map(m => rememberFact(m[1])).some(Boolean);
+  return { clean, saved };
+}
+
+function bestSpanishVoice(){
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith('es'));
+  if(!voices.length) return null;
+  const score = (v) => {
+    const n = v.name.toLowerCase(); let s = 0;
+    if(n.includes('natural') || n.includes('neural')) s += 4;
+    if(n.includes('google')) s += 3;
+    if(n.includes('premium') || n.includes('enhanced')) s += 3;
+    if(/(elvira|alvaro|monica|mónica|jorge|paulina|marisol)/.test(n)) s += 2;
+    if(v.lang.toLowerCase().startsWith('es-es')) s += 2;
+    if(v.localService) s += 1;
+    return s;
+  };
+  return voices.reduce((a,b) => score(b) > score(a) ? b : a);
+}
 function populateVoices(){
   if(!('speechSynthesis' in window)) return;
   const select = $('#voiceSelect'); const current = state.voiceName;
   const voices = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith('es'));
-  select.innerHTML = '<option value="">Automática (español)</option>';
+  select.innerHTML = '<option value="">Automática (la mejor voz en español)</option>';
   voices.forEach(v => { const o=document.createElement('option'); o.value=v.name; o.textContent=`${v.name} — ${v.lang}`; if(v.name===current)o.selected=true; select.append(o); });
+}
+function rateLabel(){
+  const r = state.voiceRate;
+  $('#voiceRateLabel').textContent = r < 0.9 ? 'Lenta' : r > 1.1 ? 'Rápida' : 'Normal';
 }
 function speak(text){
   if(!state.voice || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang='es-ES';
-  const voices=speechSynthesis.getVoices(); u.voice=voices.find(v=>v.name===state.voiceName)||voices.find(v=>v.lang.toLowerCase().startsWith('es-es'))||voices.find(v=>v.lang.toLowerCase().startsWith('es'))||null;
-  u.rate=.98; speechSynthesis.speak(u);
+  speechSynthesis.cancel();
+  const chosen = state.voiceName ? speechSynthesis.getVoices().find(v=>v.name===state.voiceName) : bestSpanishVoice();
+  const sentences = text.match(/[^.!?\n]+[.!?]?\s*/g) || [text];
+  for(const part of sentences){
+    const clean = part.trim(); if(!clean) continue;
+    const u = new SpeechSynthesisUtterance(clean); u.lang='es-ES';
+    if(chosen) u.voice = chosen;
+    u.rate = state.voiceRate;
+    speechSynthesis.speak(u);
+  }
 }
 
 function updateWelcome(){
@@ -112,10 +175,18 @@ function geminiContents(){
   return merged.map(t=>({role:t.role, parts:[{text:t.text}]}));
 }
 
+function finishAnswer(bubble, answer, readyText){
+  const { clean, saved } = extractMemory(answer);
+  bubble.textContent = clean || 'No he podido preparar una respuesta.';
+  state.messages.push({role:'assistant',content:clean}); save();
+  if(saved) addMessage('system','Anotado en la memoria de Lola. Puedes verla y editarla en Ajustes (⚙).',false);
+  speak(clean); setStatus(readyText);
+}
+
 async function localSend(bubble){
-  const completion=await engine.chat.completions.create({messages:[{role:'system',content:systemPrompt},...state.messages.filter(m=>m.role==='user'||m.role==='assistant')],temperature:.7,max_tokens:420});
+  const completion=await engine.chat.completions.create({messages:[{role:'system',content:systemPrompt()},...state.messages.filter(m=>m.role==='user'||m.role==='assistant')],temperature:.7,max_tokens:420});
   const answer=completion.choices[0]?.message?.content?.trim() || 'No he podido preparar una respuesta.';
-  bubble.textContent=answer; state.messages.push({role:'assistant',content:answer}); save(); speak(answer); setStatus(PROVIDERS.local.ready);
+  finishAnswer(bubble, answer, PROVIDERS.local.ready);
 }
 
 async function cloudSend(bubble){
@@ -123,12 +194,12 @@ async function cloudSend(bubble){
   const resp = await fetch(CLOUD_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:CLOUD_MODEL, messages:[{role:'system',content:systemPrompt},...state.messages.filter(m=>m.role==='user'||m.role==='assistant')], temperature:.7, max_tokens:500}),
+    body:JSON.stringify({model:CLOUD_MODEL, messages:[{role:'system',content:systemPrompt()},...state.messages.filter(m=>m.role==='user'||m.role==='assistant')], temperature:.7, max_tokens:600}),
     signal:AbortSignal.timeout(90000)
   });
   if(resp.status === 402 || resp.status === 429){
     const secs = parseInt(resp.headers.get('Retry-After') || '30', 10) || 30;
-    bubble.remove();
+    bubble.closest('.msg-wrap').remove();
     addMessage('system',`El servicio gratuito está ocupado. Inténtalo de nuevo en unos ${secs} segundos.`,false);
     setStatus('Servicio ocupado, espera un poco');
     return;
@@ -136,24 +207,24 @@ async function cloudSend(bubble){
   if(!resp.ok) throw new Error('nube ' + resp.status);
   const data = await resp.json();
   const answer = data.choices?.[0]?.message?.content?.trim() || 'No he podido preparar una respuesta.';
-  bubble.textContent=answer; state.messages.push({role:'assistant',content:answer}); save(); speak(answer); setStatus(PROVIDERS.cloud.ready);
+  finishAnswer(bubble, answer, PROVIDERS.cloud.ready);
 }
 
 async function geminiSend(bubble){
   const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,{
     method:'POST',
     headers:{'Content-Type':'application/json','x-goog-api-key':state.geminiKey},
-    body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt}]}, contents:geminiContents(), generationConfig:{temperature:.7, maxOutputTokens:500}}),
+    body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt()}]}, contents:geminiContents(), generationConfig:{temperature:.7, maxOutputTokens:600}}),
     signal:AbortSignal.timeout(60000)
   });
   if(resp.status === 400 || resp.status === 403){
-    bubble.remove();
+    bubble.closest('.msg-wrap').remove();
     addMessage('system','Google no acepta tu clave de Gemini. Revísala en Ajustes (⚙).',false);
     setStatus('Clave de Gemini no válida');
     return;
   }
   if(resp.status === 429){
-    bubble.remove();
+    bubble.closest('.msg-wrap').remove();
     addMessage('system','Has llegado al límite gratuito de Gemini. Prueba más tarde o cambia de inteligencia en Ajustes (⚙).',false);
     setStatus('Límite de Gemini alcanzado');
     return;
@@ -161,7 +232,7 @@ async function geminiSend(bubble){
   if(!resp.ok) throw new Error('gemini ' + resp.status);
   const data = await resp.json();
   const answer = (data.candidates?.[0]?.content?.parts || []).map(p=>p.text||'').join('').trim() || 'No he podido preparar una respuesta.';
-  bubble.textContent=answer; state.messages.push({role:'assistant',content:answer}); save(); speak(answer); setStatus(PROVIDERS.gemini.ready);
+  finishAnswer(bubble, answer, PROVIDERS.gemini.ready);
 }
 
 async function sendMessage(text){
@@ -184,11 +255,19 @@ async function sendMessage(text){
     else await cloudSend(bubble);
   }catch(error){
     console.error(error);
-    if(bubble.isConnected) bubble.remove();
+    const wrap = bubble.closest('.msg-wrap'); if(wrap && wrap.isConnected) wrap.remove();
     addMessage('system','La respuesta no se pudo completar. Comprueba tu conexión e inténtalo de nuevo.',false);
     setStatus('Lista para continuar');
   }finally{ send.disabled=false; }
 }
+
+function buildSalesPrompt(){
+  const producto = $('#salesProduct').value;
+  const target = $('#salesTarget').value;
+  const tono = $('#salesTone').value;
+  return `Redacta un mensaje comercial de venta de ${producto} dirigido a ${target}, con un tono ${tono}. Reglas: no inventes precios, tarifas, descuentos ni comisiones; no prometas cifras de ahorro concretas; el objetivo es despertar interés y conseguir una conversación o visita; termina con una llamada a la acción clara; máximo 120 palabras; listo para copiar y enviar.`;
+}
+
 function setupRecognition(){
   const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!Recognition){ $('#micButton').disabled=true; $('#micButton').title='El reconocimiento de voz no está disponible en este navegador'; return; }
@@ -204,8 +283,13 @@ $('#chatForm').addEventListener('submit',(e)=>{e.preventDefault();sendMessage(in
 input.addEventListener('input',resize); input.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(input.value);}});
 $('#micButton').addEventListener('click',()=>recognition && recognition.start());
 $('#settingsButton').addEventListener('click',()=>{ syncProviderUI(); $('#settingsDialog').showModal(); });
+$('#salesButton').addEventListener('click',()=>{ $('#salesDialog').showModal(); });
+$('#salesChip').addEventListener('click',()=>{ $('#salesDialog').showModal(); });
+$('#salesGenerate').addEventListener('click',()=>{ $('#salesDialog').close(); sendMessage(buildSalesPrompt()); });
 $('#voiceToggle').checked=state.voice; $('#voiceToggle').addEventListener('change',(e)=>{state.voice=e.target.checked;save();});
 $('#voiceSelect').addEventListener('change',(e)=>{state.voiceName=e.target.value;save();});
+$('#voiceRate').value = state.voiceRate; rateLabel();
+$('#voiceRate').addEventListener('input',(e)=>{state.voiceRate=parseFloat(e.target.value);save();rateLabel();});
 $('#providerSelect').addEventListener('change',(e)=>{
   state.provider=e.target.value; save(); cloudReady=false;
   $('#welcome').hidden=false;
@@ -213,6 +297,9 @@ $('#providerSelect').addEventListener('change',(e)=>{
   setStatus('Toca el botón para empezar');
 });
 $('#geminiKey').addEventListener('change',(e)=>{ state.geminiKey=e.target.value.trim(); save(); });
+$('#memoryText').value = state.memory;
+$('#memoryText').addEventListener('change',(e)=>{ state.memory=e.target.value.slice(0,MEMORY_MAX); save(); });
+$('#clearMemory').addEventListener('click',()=>{ state.memory=''; save(); $('#memoryText').value=''; addMessage('system','Memoria de Lola vaciada. La conversación sigue guardada.',false); });
 $('#clearConversation').addEventListener('click',()=>{state.messages=[];save();messages.innerHTML='';$('#settingsDialog').close();addMessage('system','Conversación eliminada de este navegador.',false);});
 document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>sendMessage(b.dataset.prompt)));
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});

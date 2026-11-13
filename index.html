@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#5d4a89" />
+    <meta name="theme-color" content="#1f2a44" />
     <meta name="description" content="Lola, asistente personal y comercial privada." />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
@@ -13,7 +13,10 @@
     <main class="app-shell">
       <header class="topbar">
         <div class="brand"><span class="dot" aria-hidden="true"></span><div><strong>Lola</strong><small id="status">Lista para preparar su inteligencia</small></div></div>
-        <button class="icon-button" id="settingsButton" aria-label="Abrir ajustes">⚙</button>
+        <div class="topbar-actions">
+          <button class="icon-button" id="salesButton" aria-label="Preparar un mensaje de venta" title="Mensaje de venta">💼</button>
+          <button class="icon-button" id="settingsButton" aria-label="Abrir ajustes" title="Ajustes">⚙</button>
+        </div>
       </header>
 
       <section class="welcome" id="welcome">
@@ -29,7 +32,7 @@
         <div class="messages" id="messages" aria-live="polite"></div>
         <div class="suggestions" id="suggestions">
           <button data-prompt="Ayúdame a organizar mis tareas de hoy.">Organizar mi día</button>
-          <button data-prompt="Dame ideas para contactar con un cliente potencial.">Preparar una venta</button>
+          <button id="salesChip">Preparar una venta</button>
           <button data-prompt="Haz una lista breve de prioridades para esta semana.">Prioridades</button>
         </div>
         <form class="composer" id="chatForm">
@@ -42,12 +45,43 @@
       </section>
     </main>
 
+    <dialog id="salesDialog">
+      <form method="dialog" class="settings">
+        <div class="dialog-title"><h2>Mensaje de venta</h2><button value="cancel" class="icon-button" aria-label="Cerrar">×</button></div>
+        <p class="hint">Lola redacta un mensaje para que tus comerciales lo envíen. Sin precios ni comisiones: eso lo cierras tú.</p>
+        <label for="salesProduct">Qué vendes</label>
+        <select id="salesProduct">
+          <option value="luz">Luz</option>
+          <option value="gas">Gas</option>
+          <option value="telefonía">Telefonía</option>
+          <option value="alarmas">Alarmas</option>
+        </select>
+        <label for="salesTarget">A quién va dirigido</label>
+        <select id="salesTarget">
+          <option value="un pequeño comercio local">Pequeño comercio</option>
+          <option value="una empresa mediana">Empresa mediana</option>
+          <option value="un autónomo">Autónomo</option>
+          <option value="una comunidad o administrador de fincas">Comunidad / administrador de fincas</option>
+        </select>
+        <label for="salesTone">Tono</label>
+        <select id="salesTone">
+          <option value="cercano y directo, como un conocido del barrio">Cercano</option>
+          <option value="profesional y serio">Profesional</option>
+          <option value="breve, para WhatsApp">Breve para WhatsApp</option>
+        </select>
+        <button id="salesGenerate" type="button" class="primary">Redactar mensaje con Lola</button>
+        <p class="hint">El mensaje aparece en el chat y puedes copiarlo con el botón 📋.</p>
+      </form>
+    </dialog>
+
     <dialog id="settingsDialog">
       <form method="dialog" class="settings">
         <div class="dialog-title"><h2>Ajustes</h2><button value="cancel" class="icon-button" aria-label="Cerrar">×</button></div>
         <label class="toggle"><span>Leer las respuestas en voz alta</span><input id="voiceToggle" type="checkbox" checked></label>
         <label for="voiceSelect">Voz</label>
-        <select id="voiceSelect"><option value="">Automática (español)</option></select>
+        <select id="voiceSelect"><option value="">Automática (la mejor voz en español)</option></select>
+        <label for="voiceRate">Velocidad de la voz</label>
+        <div class="rate-row"><input id="voiceRate" type="range" min="0.7" max="1.3" step="0.05" value="1"><span id="voiceRateLabel">Normal</span></div>
         <label for="providerSelect">Inteligencia de Lola</label>
         <select id="providerSelect">
           <option value="cloud">Nube gratis · sin clave (recomendada)</option>
@@ -59,8 +93,14 @@
           <input id="geminiKey" type="password" placeholder="Pega aquí tu clave de AI Studio" autocomplete="off" />
           <p class="hint">Se guarda solo en este navegador, nunca en la web. Créala gratis en aistudio.google.com</p>
         </div>
-        <button id="clearConversation" type="button" class="secondary">Borrar conversación guardada</button>
-        <p class="privacy">La conversación, la inteligencia elegida y tu clave se guardan solo en este navegador. En modo nube tus mensajes se envían a un servicio externo (Pollinations o Google): no escribas datos privados. En modo local nada sale de tu dispositivo.</p>
+        <label for="memoryText">Lo que Lola recuerda de ti</label>
+        <textarea id="memoryText" rows="4" placeholder="Ej.: Me llamo Ángel, dirijo Sinergys en Linares, vendo luz, gas, telefonía y alarmas."></textarea>
+        <p class="hint">Lola apunta sola lo importante de vuestras conversaciones y también puedes escribirlo tú aquí. Se guarda solo en este navegador y Lola lo tiene en cuenta en cada respuesta.</p>
+        <div class="settings-buttons">
+          <button id="clearMemory" type="button" class="secondary">Vaciar memoria</button>
+          <button id="clearConversation" type="button" class="secondary">Borrar conversación</button>
+        </div>
+        <p class="privacy">La conversación, la memoria, la inteligencia elegida y tu clave se guardan solo en este navegador. En modo nube tus mensajes se envían a un servicio externo (Pollinations o Google): no escribas datos privados. En modo local nada sale de tu dispositivo.</p>
       </form>
     </dialog>
     <script type="module" src="app.js"></script>
