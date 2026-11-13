@@ -21,8 +21,8 @@
         <p class="eyebrow">ASISTENTE PERSONAL Y COMERCIAL</p>
         <h1>Hola, soy Lola.</h1>
         <p>Estoy preparada para ayudarte a organizar ideas, redactar textos y planificar tu trabajo.</p>
-        <button class="primary" id="startModel">Activar inteligencia local</button>
-        <p class="hint">Descarga única aproximada: 1 GB. No requiere cuenta ni clave.</p>
+        <button class="primary" id="startModel">Empezar a hablar con Lola</button>
+        <p class="hint" id="welcomeHint">Sin descarga ni clave. Tus mensajes se envían a un servicio externo gratuito (Pollinations): no escribas datos privados.</p>
       </section>
 
       <section class="chat" aria-label="Conversación con Lola">
@@ -38,6 +38,7 @@
           <textarea id="messageInput" rows="1" placeholder="Escribe a Lola…" enterkeyhint="send"></textarea>
           <button class="send" type="submit" aria-label="Enviar mensaje">↑</button>
         </form>
+        <p class="hint cloud-note" id="cloudNote">Modo nube: tus mensajes se envían a un servicio externo gratuito. No escribas datos privados. Máximo una pregunta cada 30 segundos.</p>
       </section>
     </main>
 
@@ -47,8 +48,19 @@
         <label class="toggle"><span>Leer las respuestas en voz alta</span><input id="voiceToggle" type="checkbox" checked></label>
         <label for="voiceSelect">Voz</label>
         <select id="voiceSelect"><option value="">Automática (español)</option></select>
+        <label for="providerSelect">Inteligencia de Lola</label>
+        <select id="providerSelect">
+          <option value="cloud">Nube gratis · sin clave (recomendada)</option>
+          <option value="gemini">Nube Gemini · tu clave gratuita</option>
+          <option value="local">Local · privada, descarga de 1 GB</option>
+        </select>
+        <div id="geminiKeyBlock" hidden>
+          <label for="geminiKey">Tu clave de Gemini</label>
+          <input id="geminiKey" type="password" placeholder="Pega aquí tu clave de AI Studio" autocomplete="off" />
+          <p class="hint">Se guarda solo en este navegador, nunca en la web. Créala gratis en aistudio.google.com</p>
+        </div>
         <button id="clearConversation" type="button" class="secondary">Borrar conversación guardada</button>
-        <p class="privacy">La conversación y estos ajustes se guardan solo en este navegador. Lola no usa cuentas ni claves privadas.</p>
+        <p class="privacy">La conversación, la inteligencia elegida y tu clave se guardan solo en este navegador. En modo nube tus mensajes se envían a un servicio externo (Pollinations o Google): no escribas datos privados. En modo local nada sale de tu dispositivo.</p>
       </form>
     </dialog>
     <script type="module" src="app.js"></script>
