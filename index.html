@@ -12,43 +12,146 @@
   <body>
     <main class="app-shell">
       <header class="topbar">
-        <div class="brand"><span class="dot" aria-hidden="true"></span><div><strong>Lola</strong><small id="status">Lista para preparar su inteligencia</small></div></div>
+        <div class="brand"><img src="avatar.png" alt="" class="brand-avatar" id="brandAvatar"><div><strong>Lola</strong><small id="status">Preparando…</small></div></div>
         <div class="topbar-actions">
-          <button class="icon-button" id="salesButton" aria-label="Preparar un mensaje de venta" title="Mensaje de venta">💼</button>
+          <button class="icon-button" id="salesButton" aria-label="Preparar textos de venta" title="Textos de venta">💼</button>
           <button class="icon-button" id="settingsButton" aria-label="Abrir ajustes" title="Ajustes">⚙</button>
         </div>
       </header>
 
-      <section class="welcome" id="welcome">
-        <div class="avatar" aria-hidden="true">L</div>
-        <p class="eyebrow">ASISTENTE PERSONAL Y COMERCIAL</p>
-        <h1>Hola, soy Lola.</h1>
-        <p>Estoy preparada para ayudarte a organizar ideas, redactar textos y planificar tu trabajo.</p>
-        <button class="primary" id="startModel">Empezar a hablar con Lola</button>
-        <p class="hint" id="welcomeHint">Sin descarga ni clave. Tus mensajes se envían a un servicio externo gratuito (Pollinations): no escribas datos privados.</p>
+      <section class="view" id="view-chat">
+        <section class="welcome" id="welcome">
+          <div class="avatar" id="avatar"><img src="avatar.png" alt="Lola" id="avatarImg"></div>
+          <p class="eyebrow">ASISTENTE PERSONAL Y COMERCIAL</p>
+          <h1>Hola, soy Lola.</h1>
+          <p>Estoy preparada para ayudarte a organizar ideas, redactar textos y planificar tu trabajo.</p>
+          <button class="primary" id="startModel">Empezar a hablar con Lola</button>
+          <p class="hint" id="welcomeHint">Sin descarga ni clave. Tus mensajes se envían a un servicio externo gratuito (Pollinations): no escribas datos privados.</p>
+        </section>
+
+        <section class="chat" aria-label="Conversación con Lola">
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="suggestions" id="suggestions">
+            <button data-prompt="Ayúdame a organizar mis tareas de hoy.">Organizar mi día</button>
+            <button id="salesChip">Preparar una venta</button>
+            <button data-prompt="Haz una lista breve de prioridades para esta semana.">Prioridades</button>
+          </div>
+          <form class="composer" id="chatForm">
+            <button type="button" class="round" id="micButton" aria-label="Hablar con Lola" title="Hablar">🎙</button>
+            <label class="sr-only" for="messageInput">Escribe un mensaje</label>
+            <textarea id="messageInput" rows="1" placeholder="Escribe a Lola…" enterkeyhint="send"></textarea>
+            <button class="send" type="submit" aria-label="Enviar mensaje">↑</button>
+          </form>
+          <p class="hint cloud-note" id="cloudNote">Modo nube: tus mensajes se envían a un servicio externo gratuito. No escribas datos privados. Máximo una pregunta cada 30 segundos.</p>
+        </section>
       </section>
 
-      <section class="chat" aria-label="Conversación con Lola">
-        <div class="messages" id="messages" aria-live="polite"></div>
-        <div class="suggestions" id="suggestions">
-          <button data-prompt="Ayúdame a organizar mis tareas de hoy.">Organizar mi día</button>
-          <button id="salesChip">Preparar una venta</button>
-          <button data-prompt="Haz una lista breve de prioridades para esta semana.">Prioridades</button>
-        </div>
-        <form class="composer" id="chatForm">
-          <button type="button" class="round" id="micButton" aria-label="Hablar con Lola" title="Hablar">🎙</button>
-          <label class="sr-only" for="messageInput">Escribe un mensaje</label>
-          <textarea id="messageInput" rows="1" placeholder="Escribe a Lola…" enterkeyhint="send"></textarea>
-          <button class="send" type="submit" aria-label="Enviar mensaje">↑</button>
+      <section class="view" id="view-tasks" hidden>
+        <h2>Tareas</h2>
+        <form class="card form-grid" id="taskForm">
+          <input id="taskText" type="text" placeholder="¿Qué hay que hacer?" required maxlength="200">
+          <div class="form-row">
+            <label>Fecha <input id="taskDate" type="date"></label>
+            <label>Hora <input id="taskTime" type="time"></label>
+            <label>Prioridad
+              <select id="taskPrio"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="baja">Baja</option></select>
+            </label>
+          </div>
+          <button class="primary" type="submit">Añadir tarea</button>
+          <p class="hint">Si pones fecha y hora, Lola te avisa mientras la tengas abierta. Una web no puede avisar con la pantalla cerrada.</p>
         </form>
-        <p class="hint cloud-note" id="cloudNote">Modo nube: tus mensajes se envían a un servicio externo gratuito. No escribas datos privados. Máximo una pregunta cada 30 segundos.</p>
+        <div id="taskList" class="list"></div>
       </section>
+
+      <section class="view" id="view-notes" hidden>
+        <h2>Notas</h2>
+        <form class="card form-grid" id="noteForm">
+          <textarea id="noteText" rows="3" placeholder="Escribe una nota…" required maxlength="2000"></textarea>
+          <button class="primary" type="submit">Guardar nota</button>
+        </form>
+        <div id="noteList" class="list"></div>
+      </section>
+
+      <section class="view" id="view-agenda" hidden>
+        <h2>Agenda</h2>
+        <form class="card form-grid" id="eventForm">
+          <input id="eventTitle" type="text" placeholder="Cita o evento" required maxlength="120">
+          <div class="form-row">
+            <label>Fecha <input id="eventDate" type="date" required></label>
+            <label>Hora <input id="eventTime" type="time"></label>
+          </div>
+          <input id="eventNote" type="text" placeholder="Detalle (opcional)" maxlength="200">
+          <button class="primary" type="submit">Añadir a la agenda</button>
+          <p class="hint">Agenda local de este navegador. Cada evento se puede exportar (.ics) para meterlo en el calendario del Mac o del iPhone.</p>
+        </form>
+        <div class="row-actions"><button class="secondary" id="exportAllIcs" type="button">Exportar todo (.ics)</button></div>
+        <div id="eventList" class="list"></div>
+      </section>
+
+      <section class="view" id="view-contacts" hidden>
+        <h2>Contactos comerciales</h2>
+        <form class="card form-grid" id="contactForm">
+          <input id="contactName" type="text" placeholder="Nombre" required maxlength="80">
+          <div class="form-row">
+            <input id="contactCompany" type="text" placeholder="Empresa" maxlength="80">
+            <input id="contactPhone" type="tel" placeholder="Teléfono" maxlength="20">
+          </div>
+          <div class="form-row">
+            <label>Le interesa
+              <select id="contactInterest"><option value="">Sin marcar</option><option>Luz</option><option>Gas</option><option>Telefonía</option><option>Alarmas</option><option>Otro</option></select>
+            </label>
+          </div>
+          <input id="contactNote" type="text" placeholder="Nota (opcional)" maxlength="200">
+          <button class="primary" type="submit">Guardar contacto</button>
+        </form>
+        <div id="contactList" class="list"></div>
+
+        <h2>Oportunidades</h2>
+        <form class="card form-grid" id="oppForm">
+          <label>Contacto <select id="oppContact"></select></label>
+          <div class="form-row">
+            <label>Producto
+              <select id="oppProduct"><option>Luz</option><option>Gas</option><option>Telefonía</option><option>Alarmas</option><option>Otro</option></select>
+            </label>
+            <label>Estado
+              <select id="oppStatus"><option value="nueva">Nueva</option><option value="en curso">En curso</option><option value="ganada">Ganada</option><option value="perdida">Perdida</option></select>
+            </label>
+          </div>
+          <label>Próximo seguimiento <input id="oppFollowUp" type="date"></label>
+          <input id="oppNote" type="text" placeholder="Nota (opcional)" maxlength="200">
+          <button class="primary" type="submit">Registrar oportunidad</button>
+        </form>
+        <div id="oppList" class="list"></div>
+
+        <h2>Actividad</h2>
+        <div class="card form-grid">
+          <p class="hint">Resumen hecho en tu navegador, sin enviar nada fuera.</p>
+          <button class="secondary" id="activitySummary" type="button">Ver resumen de actividad</button>
+          <div id="activityOut" class="activity-out" hidden></div>
+        </div>
+      </section>
+
+      <nav class="tabbar" aria-label="Secciones">
+        <button class="tab active" data-view="view-chat">💬<span>Chat</span></button>
+        <button class="tab" data-view="view-tasks">✓<span>Tareas</span></button>
+        <button class="tab" data-view="view-notes">📝<span>Notas</span></button>
+        <button class="tab" data-view="view-agenda">📅<span>Agenda</span></button>
+        <button class="tab" data-view="view-contacts">👥<span>Ventas</span></button>
+      </nav>
     </main>
 
     <dialog id="salesDialog">
       <form method="dialog" class="settings">
-        <div class="dialog-title"><h2>Mensaje de venta</h2><button value="cancel" class="icon-button" aria-label="Cerrar">×</button></div>
-        <p class="hint">Lola redacta un mensaje para que tus comerciales lo envíen. Sin precios ni comisiones: eso lo cierras tú.</p>
+        <div class="dialog-title"><h2>Textos de venta</h2><button value="cancel" class="icon-button" aria-label="Cerrar">×</button></div>
+        <p class="hint">Lola redacta el texto y aparece en el chat. Sin precios ni comisiones: eso lo cierras tú.</p>
+        <label for="salesKind">Qué necesitas</label>
+        <select id="salesKind">
+          <option value="mensaje">Mensaje de primer contacto</option>
+          <option value="seguimiento">Mensaje de seguimiento</option>
+          <option value="me lo pienso">Respuesta a "me lo pienso"</option>
+          <option value="guion">Guion de llamada</option>
+          <option value="propuesta">Propuesta breve por escrito</option>
+        </select>
         <label for="salesProduct">Qué vendes</label>
         <select id="salesProduct">
           <option value="luz">Luz</option>
@@ -69,8 +172,8 @@
           <option value="profesional y serio">Profesional</option>
           <option value="breve, para WhatsApp">Breve para WhatsApp</option>
         </select>
-        <button id="salesGenerate" type="button" class="primary">Redactar mensaje con Lola</button>
-        <p class="hint">El mensaje aparece en el chat: mantén pulsado el texto para copiarlo.</p>
+        <button id="salesGenerate" type="button" class="primary">Redactar con Lola</button>
+        <p class="hint">El texto aparece en el chat: mantén pulsado para copiarlo.</p>
       </form>
     </dialog>
 
@@ -95,12 +198,24 @@
         </div>
         <label for="memoryText">Lo que Lola recuerda de ti</label>
         <textarea id="memoryText" rows="4" placeholder="Ej.: Me llamo Ángel, dirijo Sinergys en Linares, vendo luz, gas, telefonía y alarmas."></textarea>
-        <p class="hint">Lola apunta sola lo importante de vuestras conversaciones y también puedes escribirlo tú aquí. Se guarda solo en este navegador y Lola lo tiene en cuenta en cada respuesta.</p>
+        <p class="hint">Lola apunta sola lo importante de vuestras conversaciones y también puedes escribirlo tú aquí. Se guarda solo en este navegador.</p>
+        <h3 class="settings-h">Avisos</h3>
+        <button id="notifPermission" type="button" class="secondary">Permitir avisos del navegador</button>
+        <p class="hint">Los avisos de tareas y agenda suenan solo mientras Lola está abierta. Una web gratis no puede avisar con la pantalla cerrada.</p>
+        <h3 class="settings-h">Tus datos</h3>
+        <div class="settings-buttons">
+          <button id="exportData" type="button" class="secondary">Exportar datos</button>
+          <button id="importData" type="button" class="secondary">Importar datos</button>
+          <input id="importFile" type="file" accept="application/json" hidden>
+        </div>
+        <p class="hint">Se descarga un archivo con tus tareas, notas, agenda, contactos, memoria y conversación. Guárdalo para pasarlo a otro dispositivo.</p>
         <div class="settings-buttons">
           <button id="clearMemory" type="button" class="secondary">Vaciar memoria</button>
           <button id="clearConversation" type="button" class="secondary">Borrar conversación</button>
         </div>
-        <p class="privacy">La conversación, la memoria, la inteligencia elegida y tu clave se guardan solo en este navegador. En modo nube tus mensajes se envían a un servicio externo (Pollinations o Google): no escribas datos privados. En modo local nada sale de tu dispositivo.</p>
+        <h3 class="settings-h">Instalar en el iPhone</h3>
+        <p class="hint">Abre la web en Safari, toca Compartir (el cuadrado con la flecha) y elige "Añadir a pantalla de inicio". Lola se abrirá como una app.</p>
+        <p class="privacy">Todo se guarda solo en este navegador. En modo nube tus mensajes de chat se envían a un servicio externo (Pollinations o Google): no escribas datos privados. En modo local nada sale de tu dispositivo. Las tareas, notas, agenda y contactos no salen nunca de tu navegador salvo que los exportes tú.</p>
       </form>
     </dialog>
     <script type="module" src="app.js"></script>
