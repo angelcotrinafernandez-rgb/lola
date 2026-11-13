@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#5d4a89" />
+    <meta name="description" content="Lola, asistente personal y comercial privada." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Lola</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand"><span class="dot" aria-hidden="true"></span><div><strong>Lola</strong><small id="status">Lista para preparar su inteligencia</small></div></div>
+        <button class="icon-button" id="settingsButton" aria-label="Abrir ajustes">⚙</button>
+      </header>
+
+      <section class="welcome" id="welcome">
+        <div class="avatar" aria-hidden="true">L</div>
+        <p class="eyebrow">ASISTENTE PERSONAL Y COMERCIAL</p>
+        <h1>Hola, soy Lola.</h1>
+        <p>Estoy preparada para ayudarte a organizar ideas, redactar textos y planificar tu trabajo.</p>
+        <button class="primary" id="startModel">Activar inteligencia local</button>
+        <p class="hint">Descarga única aproximada: 1 GB. No requiere cuenta ni clave.</p>
+      </section>
+
+      <section class="chat" aria-label="Conversación con Lola">
+        <div class="messages" id="messages" aria-live="polite"></div>
+        <div class="suggestions" id="suggestions">
+          <button data-prompt="Ayúdame a organizar mis tareas de hoy.">Organizar mi día</button>
+          <button data-prompt="Dame ideas para contactar con un cliente potencial.">Preparar una venta</button>
+          <button data-prompt="Haz una lista breve de prioridades para esta semana.">Prioridades</button>
+        </div>
+        <form class="composer" id="chatForm">
+          <button type="button" class="round" id="micButton" aria-label="Hablar con Lola" title="Hablar">🎙</button>
+          <label class="sr-only" for="messageInput">Escribe un mensaje</label>
+          <textarea id="messageInput" rows="1" placeholder="Escribe a Lola…" enterkeyhint="send"></textarea>
+          <button class="send" type="submit" aria-label="Enviar mensaje">↑</button>
+        </form>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings">
+        <div class="dialog-title"><h2>Ajustes</h2><button value="cancel" class="icon-button" aria-label="Cerrar">×</button></div>
+        <label class="toggle"><span>Leer las respuestas en voz alta</span><input id="voiceToggle" type="checkbox" checked></label>
+        <label for="voiceSelect">Voz</label>
+        <select id="voiceSelect"><option value="">Automática (español)</option></select>
+        <button id="clearConversation" type="button" class="secondary">Borrar conversación guardada</button>
+        <p class="privacy">La conversación y estos ajustes se guardan solo en este navegador. Lola no usa cuentas ni claves privadas.</p>
+      </form>
+    </dialog>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
