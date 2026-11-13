@@ -37,9 +37,9 @@ function systemPrompt(){
   return basePrompt + (memory?`\n\nLo que recuerdas de Ángel (memoria guardada):\n${memory}`:'') + bizSummary();
 }
 
-function addMessage(role, text, persist=true){
+function addMessage(role, text, persist=true, display=null){
   const wrap=document.createElement('div'); wrap.className=`msg-wrap ${role}`;
-  const el=document.createElement('article'); el.className=`message ${role}`; el.textContent=text;
+  const el=document.createElement('article'); el.className=`message ${role}`; el.textContent=display||text;
   wrap.append(el);
   if(role==='assistant' && text){
     const copy=document.createElement('button'); copy.className='msg-copy'; copy.type='button'; copy.title='Copiar o compartir'; copy.textContent='📋';
@@ -191,13 +191,13 @@ async function geminiSend(bubble){
   const answer=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim()||'No he podido preparar una respuesta.';
   finishAnswer(bubble, answer, PROVIDERS.gemini.ready);
 }
-async function sendMessage(text){
+async function sendMessage(text, displayLabel=null){
   text=text.trim(); if(!text||isLoading) return;
   if(state.provider==='cloud'){
     const wait=CLOUD_MIN_MS-(Date.now()-lastCloudRequest);
     if(wait>0){ addMessage('system',`Modo gratis: una pregunta cada 30 segundos. Espera ${Math.ceil(wait/1000)} segundos y envíala otra vez.`,false); setStatus('Espera unos segundos'); return; }
   }
-  addMessage('user',text); input.value=''; resize(); send.disabled=true;
+  addMessage('user',text,true,displayLabel); input.value=''; resize(); send.disabled=true;
   const ready=state.provider==='local'?!!engine:cloudReady;
   if(!ready){ const ok=await activate(); if(!ok){ send.disabled=false; return; } }
   const bubble=addMessage('assistant','Escribiendo…',false); setStatus('Lola está respondiendo…');
@@ -429,7 +429,11 @@ $('#micButton').addEventListener('click',()=>recognition&&recognition.start());
 $('#settingsButton').addEventListener('click',()=>{ syncProviderUI(); $('#settingsDialog').showModal(); });
 $('#salesButton').addEventListener('click',()=>$('#salesDialog').showModal());
 $('#salesChip').addEventListener('click',()=>$('#salesDialog').showModal());
-$('#salesGenerate').addEventListener('click',()=>{ $('#salesDialog').close(); document.querySelector('[data-view="view-chat"]').click(); sendMessage(buildSalesPrompt()); });
+$('#salesGenerate').addEventListener('click',()=>{
+  $('#salesDialog').close(); document.querySelector('[data-view="view-chat"]').click();
+  const k=$('#salesKind'); const label='💼 '+k.options[k.selectedIndex].text+' · '+$('#salesProduct').value;
+  sendMessage(buildSalesPrompt(), label);
+});
 $('#voiceToggle').checked=state.voice;
 $('#voiceToggle').addEventListener('change',e=>{state.voice=e.target.checked;save();});
 $('#voiceSelect').addEventListener('change',e=>{state.voiceName=e.target.value;save();});
