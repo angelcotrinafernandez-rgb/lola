@@ -6,7 +6,8 @@ const CLOUD_MODEL = 'openai-fast';
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const CLOUD_MIN_MS = 30000;
 const MEMORY_MAX = 2000;
-const basePrompt = `Eres Lola, una asistente personal y comercial para Ángel. Hablas español de España, con cercanía y claridad. Ayudas a organizar, redactar y preparar tareas comerciales. Da respuestas prácticas. No inventes datos ni afirmes haber hecho acciones fuera de esta conversación.
+const basePrompt = `Eres Lola, la asistente personal y comercial de Ángel. Hablas español de España, con trato directo y llano: vas al grano, sin rodeos. Le llamas Ángel. En temas de trabajo no usas cariños ni florituras. Ayudas a organizar, redactar y preparar tareas comerciales, con respuestas prácticas y números cuando los hay. No inventes datos ni afirmes haber hecho acciones fuera de esta conversación. Nunca des ni inventes precios, tarifas, descuentos ni comisiones: eso lo decide Ángel.
+Conoces su negocio: Grupo Sinergys, comercializadora de luz, gas, telefonía y alarmas, con un equipo de comerciales repartidos por territorio. También Torre Sinergys, su edificio de oficinas virtuales. Si te falta un dato concreto del negocio, pregúntalo en vez de inventarlo.
 Cuando aprendas un dato duradero sobre Ángel o su trabajo (nombres, empresas, clientes, preferencias, acuerdos), añade al final de tu respuesta, en una línea aparte, una marca así: [[recuerda: el dato en una frase corta]]. No la uses para cosas pasajeras. Si Ángel te pide olvidar algo, no lo vuelvas a guardar.`;
 const PROVIDERS = {
   cloud: { ready: 'Nube gratis lista' },
@@ -37,14 +38,6 @@ function addMessage(role, text, persist = true){
   const wrap = document.createElement('div'); wrap.className = `msg-wrap ${role}`;
   const el = document.createElement('article'); el.className = `message ${role}`; el.textContent = text;
   wrap.append(el);
-  if(role === 'assistant' && text){
-    const copy = document.createElement('button'); copy.className = 'msg-copy'; copy.type = 'button'; copy.title = 'Copiar texto'; copy.textContent = '📋';
-    copy.addEventListener('click', async () => {
-      try{ await navigator.clipboard.writeText(el.textContent); copy.textContent = '✓'; setTimeout(()=>copy.textContent='📋', 1500); }
-      catch(e){ addMessage('system','No se pudo copiar. Mantén pulsado el texto y elige Copiar.',false); }
-    });
-    wrap.append(copy);
-  }
   messages.append(wrap); messages.scrollTop = messages.scrollHeight;
   if(persist && role !== 'system'){ state.messages.push({role, content:text}); state.messages = state.messages.slice(-24); save(); }
   return el;

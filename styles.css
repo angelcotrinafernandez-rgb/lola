@@ -29,8 +29,6 @@ button{font:inherit}
 .message.user{background:var(--navy);color:#fff;border-bottom-right-radius:5px}
 .message.assistant{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px;box-shadow:0 2px 8px #1f2a440d}
 .message.system{background:#fdf3df;color:#6b4d12;font-size:13px;text-align:center;border:1px solid #ecd9ac}
-.msg-copy{border:0;background:transparent;cursor:pointer;font-size:14px;opacity:.45;padding:4px;border-radius:8px}
-.msg-copy:hover{opacity:1;background:var(--soft)}
 .suggestions{display:flex;gap:8px;overflow:auto;padding:2px}
 .suggestions button{border:1px solid #d6d0bf;background:#fff;color:var(--navy);font-size:13px;white-space:nowrap}
 .suggestions button:hover{border-color:var(--accent)}
